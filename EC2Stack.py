@@ -3,10 +3,10 @@ from aws_cdk import aws_ec2 as ec2
 from constructs import Construct
 
 class EC2Stack(cdk.Stack):
-
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
+        #vpc
         vpc = ec2.Vpc(self, "MyVpc",
             nat_gateways=1,
             subnet_configuration=[
@@ -24,13 +24,15 @@ class EC2Stack(cdk.Stack):
             )
         vpcID = vpc.vpc_id
         
+        #amazon machine image, for ec2 instances
         linux_ami = ec2.MachineImage.latest_amazon_linux(
             generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX,
             edition=ec2.AmazonLinuxEdition.STANDARD,
             virtualization=ec2.AmazonLinuxVirt.HVM,
             storage=ec2.AmazonLinuxStorage.GENERAL_PURPOSE
             )
-            
+        
+        #ec2 instance creation, one associated with public subnet, two associated with privates subnets  
         miA = ec2.Instance(self, "miA",
             vpc=vpc,
             instance_name="miiA_name",
@@ -38,11 +40,6 @@ class EC2Stack(cdk.Stack):
                 subnet_type=ec2.SubnetType.PUBLIC),
             instance_type=ec2.InstanceType(instance_type_identifier="t2.nano"),
             machine_image=linux_ami
-            )
-        #priv instances
-        #selection for putting instances in specfic subnets
-        privSelection = vpc.select_subnets(
-            subnet_type=ec2.SubnetType.PRIVATE_ISOLATED
             )
         miB1 = ec2.Instance(self, "miB1",
             vpc=vpc,
@@ -60,33 +57,16 @@ class EC2Stack(cdk.Stack):
             instance_type=ec2.InstanceType(instance_type_identifier="t2.nano"),
             machine_image=linux_ami
             )
-        #endpoint for priv_iso subnets 1 and 2
-        endpoint1 = ec2.InterfaceVpcEndpoint(self, "Endpoint1",
-            vpc=vpc,
-            subnets=privSelection[0]
+
+        #routes public ec2's associated public subnet to the two isolated subnets
+        A_B1 = ec2.CfnRoute(self, "A_B1",
+            route_table_id=vpc.public_subnets[0].route_table.route_table_id,
+            destination_cidr_block=vpc.isolated_subnets[0].ipv4_cidr_block,
+            instance_id=miB1.instance_id
             )
-        endpoint2 = ec2.InterfaceVpcEndpoint(self, "Endpoint2",
-            vpc=vpc,
-            subnets=privSelection[1]
+        A_B2 = ec2.CfnRoute(self, "A_B2",
+            route_table_id=vpc.public_subnets[0].route_table.route_table_id,
+            destination_cidr_block=vpc.isolated_subnets[1].ipv4_cidr_block,
+            instance_id=miB2.instance_id
             )
-        EP1ID = endpoint1.vpc_endpoint_id
-        EP2ID = endpoint2.vpc_endpoint_id
-        
-        #https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html#RouteTables
-        #https://docs.aws.amazon.com/cdk/api/v1/python/aws_cdk.aws_ec2/CfnLocalGatewayRoute.html?highlight=local%20route%20table#aws_cdk.aws_ec2.CfnLocalGatewayRoute.local_gateway_route_table_id
-        CRT = ec2.CfnRouteTable(self, "CRT",
-            vpc_id=vpcID
-            )
-        RTID = CRT.attr_route_table_id
-        #association = CRT.CfnRouteTableAssociation(self,
-         #   )
-    
-        #https://docs.aws.amazon.com/cdk/api/v1/python/aws_cdk.aws_ec2/CfnRoute.html
-        #A_B1 = ec2.CfnRoute(self, "A_B1",
-            #route_table_id=RTID,
-            #destination = vpc.private_subnets[0]
-            #target=local
-            #)
             
-        #find gatewayid for private subnets, target = that, destiniation = ip of subnet
-        #look into ENI's for connection tables
