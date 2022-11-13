@@ -10,6 +10,8 @@ easy to scale to multiple private instances
 
 public instance acts as buffer security layer
 
+-----------------------------------------------------
+
 git clone https://github.com/Asilomare/CDKNetwork ./
 cdk deploy
 
