@@ -12,7 +12,7 @@ public instance acts as buffer security layer
 
 -----------------------------------------------------
 
-git clone https://github.com/Asilomare/CDKNetwork ./
+git clone https://github.com/Asilomare/CDKNetwork ./ 
 cdk deploy
 
 aws ec2 describe-instances
