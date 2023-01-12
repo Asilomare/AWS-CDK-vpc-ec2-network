@@ -6,9 +6,7 @@ VPC with 2 subnets, public and private
 
 SSH connection to instance A, and connect from there to other private instance(s)
 
-easy to scale to multiple private instances 
-
-public instance acts as buffer security layer
+public instance acts as managerial overseeer
 
 -----------------------------------------------------
 
